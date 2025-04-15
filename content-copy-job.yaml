@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: content-copy-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: content-creator
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          echo '<html><head><title>NFS Demo</title></head><body>' > /content/index.html
+          echo '<h1>Hello from Kubernetes NFS!</h1>' >> /content/index.html
+          echo '<p>This is a demonstration of NFS storage in Kubernetes.</p>' >> /content/index.html
+          echo '<p>Current time when this file was generated: '$(date)'</p>' >> /content/index.html
+          echo '</body></html>' >> /content/index.html
+          echo "Content created successfully!"
+        volumeMounts:
+        - name: web-content
+          mountPath: /content
+      restartPolicy: Never
+      volumes:
+      - name: web-content
+        persistentVolumeClaim:
+          claimName: web-content-pvc
+  backoffLimit: 4
