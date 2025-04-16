@@ -15,10 +15,15 @@ helm install nfs-server-provisioner stable/nfs-server-provisioner \
   --set persistence.enabled=true \
   --set persistence.size=10Gi
 
+echo "Step 4: Installing Kubeview with Helm..."
+helm repo add kubeview https://benc-uk.github.io/kubeview/charts
+helm repo update
+helm install kubeview-release kubeview/kubeview
+
 echo "Waiting for NFS server to be ready..."
 sleep 30
 
-echo "Step 4: Creating Persistent Volume Claim..."
+echo "Step 5: Creating Persistent Volume Claim..."
 cat > pvc.yaml << 'EOF'
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -34,7 +39,7 @@ spec:
 EOF
 kubectl apply -f pvc.yaml
 
-echo "Step 5: Creating Nginx Deployment..."
+echo "Step 6: Creating Nginx Deployment..."
 cat > nginx-deployment.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -67,7 +72,7 @@ spec:
 EOF
 kubectl apply -f nginx-deployment.yaml
 
-echo "Step 6: Creating Nginx Service..."
+echo "Step 7: Creating Nginx Service..."
 cat > nginx-service.yaml << 'EOF'
 apiVersion: v1
 kind: Service
@@ -83,7 +88,7 @@ spec:
 EOF
 kubectl apply -f nginx-service.yaml
 
-echo "Step 7: Creating Content Copy Job..."
+echo "Step 8: Creating Content Copy Job..."
 cat > content-copy-job.yaml << 'EOF'
 apiVersion: batch/v1
 kind: Job
@@ -100,7 +105,7 @@ spec:
         - |
           echo '<html><head><title>NFS Demo</title></head><body>' > /content/index.html
           echo '<h1>Hello from Kubernetes NFS!</h1>' >> /content/index.html
-          echo '<p>This is a demonstration of NFS storage in Kubernetes.</p>' >> /content/index.html
+          echo '<p>This is a demonstration of NFS storage in Kubernetes performed for one of the laboratory in Large Scale Computing course on AGH UST.</p>' >> /content/index.html
           echo '<p>Current time when this file was generated: '$(date)'</p>' >> /content/index.html
           echo '</body></html>' >> /content/index.html
           echo "Content created successfully!"
@@ -122,5 +127,10 @@ sleep 10
 echo "Checking status of all resources..."
 kubectl get pods,pvc,svc,jobs
 
-echo "Access your application at:"
+echo "Access your Nginx application at:"
 minikube service nginx-service --url
+
+echo "Access Kubeview dashboard at:"
+kubectl port-forward svc/kubeview-release 8000:80 --address 0.0.0.0 &
+echo "http://localhost:8000"
+echo "To stop port forwarding later, find and kill the process with: pkill -f 'port-forward'"
